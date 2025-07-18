@@ -1,0 +1,131 @@
+# Nockchain 性能优化配置
+# 将此文件复制到项目根目录并重命名为 Cargo.toml 以替换原配置
+
+[workspace]
+members = [
+    "crates/equix-latency",
+    "crates/kernels", 
+    "crates/hoonc",
+    "crates/hoon",
+    "crates/nockapp",
+    "crates/nockchain-libp2p-io",
+    "crates/nockchain",
+    "crates/nockvm/rust/ibig",
+    "crates/nockvm/rust/murmur3", 
+    "crates/nockvm/rust/nockvm_macros",
+    "crates/nockvm/rust/nockvm",
+    "crates/nockchain-wallet",
+    "crates/zkvm-jetpack",
+]
+
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+# 性能优化配置
+[profile.release]
+opt-level = 3                    # 最高优化级别
+lto = "fat"                      # 启用链接时优化
+codegen-units = 1                # 单个代码生成单元以获得最佳优化
+panic = "abort"                  # 减少二进制大小和提高性能
+debug = false                    # 禁用调试信息
+rpath = false                    # 禁用rpath
+strip = true                     # 剥离符号表
+
+[profile.release-with-debug]
+inherits = "release"
+debug = true                     # 保留调试信息的发布版本
+
+# 针对特定目标的优化配置
+[profile.bench]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = true
+
+# 开发时的快速编译配置
+[profile.dev]
+opt-level = 0
+debug = true
+incremental = true
+
+# 性能优化的依赖配置
+[workspace.dependencies]
+# 高性能内存分配器
+jemallocator = "0.5"
+mimalloc = "0.1"
+
+# SIMD 和并行计算
+rayon = "1.8"
+wide = "0.7"
+
+# 性能分析工具
+criterion = { version = "0.5", features = ["html_reports"] }
+pprof = { version = "0.13", features = ["flamegraph", "protobuf-codec"] }
+
+# 原有依赖保持不变
+hoonc = { path = "crates/hoonc" }
+nockapp = { path = "crates/nockapp" }
+ibig = { path = "crates/nockvm/rust/ibig" }
+kernels = { path = "crates/kernels" }
+murmur3 = { path = "crates/nockvm/rust/murmur3" }
+nockchain = { path = "crates/nockchain" }
+nockchain-libp2p-io = { path = "crates/nockchain-libp2p-io" }
+nockvm = { path = "crates/nockvm/rust/nockvm" }
+nockvm_crypto = { path = "crates/nockvm/rust/nockvm_crypto" }
+nockvm_macros = { path = "crates/nockvm/rust/nockvm_macros" }
+nockchain-wallet = { path = "crates/nockchain-wallet" }
+zkvm-jetpack = { path = "crates/zkvm-jetpack" }
+
+# 高性能依赖版本
+tokio = { version = "1.35", features = ["full", "tracing"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.4", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+anyhow = "1.0"
+thiserror = "1.0"
+blake3 = "1.5"
+sha2 = "0.10"
+rand = "0.8"
+crossbeam = "0.8"
+parking_lot = "0.12"
+dashmap = "5.5"
+once_cell = "1.19"
+
+# 网络相关优化依赖
+libp2p = { git = "https://github.com/libp2p/rust-libp2p.git", rev = "da0017ee887a868e231ed78c7de892779c17800d" }
+
+# 测试和基准测试工具  
+criterion = { git = "https://github.com/vlovich/criterion.rs.git", rev = "9b485aece85a3546126b06cc25d33e14aba829b3", features = ["html_reports"] }
+testcontainers = { git = "https://github.com/bitemyapp/testcontainers-rs.git", rev = "54851fd9faf9b9cded9d681b46f87c056880d870" }
+
+# 编译时特性标志优化
+[features]
+default = ["optimized"]
+optimized = ["jemalloc", "simd", "numa"]
+jemalloc = ["jemallocator"]
+mimalloc_feature = ["mimalloc"]
+simd = []
+numa = []
+profiling = ["pprof"]
+
+# 目标特定的配置
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+wide = "0.7"
+
+[target.'cfg(unix)'.dependencies] 
+nix = "0.27"
+
+# 条件编译配置
+[target.'cfg(target_env = "musl")'.dependencies]
+mimalloc = { version = "0.1", default-features = false }
+
+# 自定义任务配置
+[alias]
+bench-all = "bench --workspace"
+build-optimized = "build --release --features optimized"
+profile = "build --release --features profiling"
