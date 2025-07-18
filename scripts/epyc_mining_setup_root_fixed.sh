@@ -461,19 +461,70 @@ compile_nockchain() {
     echo "  - 目标架构: $EPYC_ARCH"
     echo "  - 线程数: $CPU_THREADS"
     
-    # 设置并行编译
-    export MAKEFLAGS="-j$CPU_THREADS"
-    export CARGO_BUILD_JOBS="$CPU_THREADS"
+    # 设置CPU性能模式进行全速编译
+    info "⚡ 设置CPU全速编译模式..."
+    echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null 2>&1 || warn "无法设置CPU调度器"
     
-    # 开始编译
-    info "开始编译 (使用 $CPU_THREADS 个编译线程)..."
-    RUST_LOG=info cargo build --release || {
-        warn "使用默认特性编译失败，尝试不使用特性..."
-        RUST_LOG=info cargo build --release --no-default-features || {
-            error "编译失败"
-            exit 1
+    # 计算超线程优化的编译线程数
+    if echo "$CPU_MODEL" | grep -q "EPYC 9"; then
+        TURBO_THREADS=$((CPU_THREADS + 16))  # EPYC 9000系列超线程优化
+    elif echo "$CPU_MODEL" | grep -q "EPYC 7"; then
+        TURBO_THREADS=$((CPU_THREADS + 8))   # EPYC 7000系列适度超线程
+    else
+        TURBO_THREADS=$((CPU_THREADS + 12))  # 通用优化
+    fi
+    
+    # 增强编译标志
+    export RUSTFLAGS="$RUSTFLAGS -C opt-level=3 -C lto=fat -C codegen-units=1 -C panic=abort"
+    export RUSTFLAGS="$RUSTFLAGS -C target-feature=+avx512f,+avx512cd,+avx512bw,+avx512dq,+avx512vl"
+    
+    # 设置并行编译（使用超线程优化）
+    export MAKEFLAGS="-j$TURBO_THREADS"
+    export CARGO_BUILD_JOBS="$TURBO_THREADS"
+    export CARGO_BUILD_PIPELINING="true"
+    export CARGO_INCREMENTAL=0  # 禁用增量编译获得最佳性能
+    
+    # 设置编译进程优先级
+    renice -n -10 $$ 2>/dev/null || warn "无法设置进程优先级"
+    
+    # 开始全速编译
+    info "🚀 开始全速编译 (使用 $TURBO_THREADS 个线程，超线程优化)..."
+    
+    # 显示编译前系统状态
+    info "编译前系统状态:"
+    echo "  - 可用内存: $(free -h | grep Mem | awk '{print $7}')"
+    echo "  - CPU负载: $(uptime | awk -F'load average:' '{print $2}')"
+    
+    # 开始编译计时
+    COMPILE_START=$(date +%s)
+    
+    # 使用CPU亲和性优化编译（如果可用）
+    if command -v taskset &> /dev/null; then
+        info "使用CPU亲和性优化..."
+        taskset -c 0-$((CPU_CORES-1)) cargo build --release --verbose || {
+            warn "CPU亲和性编译失败，尝试常规编译..."
+            RUST_LOG=info cargo build --release || {
+                warn "使用默认特性编译失败，尝试不使用特性..."
+                RUST_LOG=info cargo build --release --no-default-features || {
+                    error "编译失败"
+                    exit 1
+                }
+            }
         }
-    }
+    else
+        RUST_LOG=info cargo build --release || {
+            warn "使用默认特性编译失败，尝试不使用特性..."
+            RUST_LOG=info cargo build --release --no-default-features || {
+                error "编译失败"
+                exit 1
+            }
+        }
+    fi
+    
+    # 计算编译时间
+    COMPILE_END=$(date +%s)
+    COMPILE_TIME=$((COMPILE_END - COMPILE_START))
+    success "全速编译完成！耗时: ${COMPILE_TIME}秒"
     
     # 验证编译结果
     if [[ -f "target/release/nockchain" ]]; then
