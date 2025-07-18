@@ -6,8 +6,14 @@ version.workspace = true
 edition.workspace = true
 
 [features]
+default = ["optimized"]
 bazel_build = []
 jemalloc = ["tikv-jemallocator"]
+optimized = ["jemalloc", "simd", "numa"]
+mimalloc_feature = ["mimalloc"]
+simd = []
+numa = []
+profiling = ["pprof"]
 
 [dependencies]
 hoonc.workspace = true
@@ -43,6 +49,8 @@ tracing.workspace = true
 tracing-test.workspace = true
 num_cpus = { workspace = true }
 rand = { workspace = true }
+mimalloc = { workspace = true, optional = true }
+pprof = { workspace = true, optional = true }
 
 zkvm-jetpack.workspace = true
 

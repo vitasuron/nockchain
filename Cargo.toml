@@ -104,25 +104,11 @@ libp2p = { git = "https://github.com/libp2p/rust-libp2p.git", rev = "da0017ee887
 testcontainers = { git = "https://github.com/bitemyapp/testcontainers-rs.git", rev = "54851fd9faf9b9cded9d681b46f87c056880d870" }
 
 # ===== 编译时特性标志优化 =====
-[features]
-default = ["optimized"]
-optimized = ["jemalloc", "simd", "numa"]
-jemalloc = ["jemallocator"]
-mimalloc_feature = ["mimalloc"]
-simd = []
-numa = []
-profiling = ["pprof"]
+# 注意：features 部分已移动到具体的包中 (crates/nockchain/Cargo.toml)
+# 工作区清单不支持直接定义 features
 
-# 目标特定的配置
-[target.'cfg(target_arch = "x86_64")'.dependencies]
-wide = "0.7"
-
-[target.'cfg(unix)'.dependencies] 
-nix = "0.27"
-
-# 条件编译配置
-[target.'cfg(target_env = "musl")'.dependencies]
-mimalloc = { version = "0.1", default-features = false }
+# 目标特定的配置已移动到具体的包中
+# 工作区清单不支持 target 特定的依赖项
 
 # ===== 自定义任务配置 =====
 [alias]
