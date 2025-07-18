@@ -21,7 +21,7 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; }
 NOCKCHAIN_DIR="${NOCKCHAIN_DIR:-/opt/nockchain}"
 
 echo "=== 🔧 Cargo.toml 清单修复工具 ==="
-echo "修复虚拟清单配置问题..."
+echo "修复虚拟清单配置问题和缺失依赖..."
 echo
 
 # 检查项目目录
