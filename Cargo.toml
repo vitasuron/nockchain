@@ -1,14 +1,17 @@
+# Nockchain 性能优化配置
+# 针对 AMD EPYC 服务器优化
+
 [workspace]
 members = [
     "crates/equix-latency",
-    "crates/kernels",
+    "crates/kernels", 
     "crates/hoonc",
     "crates/hoon",
     "crates/nockapp",
     "crates/nockchain-libp2p-io",
     "crates/nockchain",
     "crates/nockvm/rust/ibig",
-    "crates/nockvm/rust/murmur3",
+    "crates/nockvm/rust/murmur3", 
     "crates/nockvm/rust/nockvm_macros",
     "crates/nockvm/rust/nockvm",
     "crates/nockchain-wallet",
@@ -21,190 +24,110 @@ resolver = "2"
 version = "0.1.0"
 edition = "2021"
 
-[workspace.dependencies.hoonc]
-path = "crates/hoonc"
+# ===== 性能优化配置 =====
+[profile.release]
+opt-level = 3                    # 最高优化级别
+lto = "fat"                      # 启用链接时优化
+codegen-units = 1                # 单个代码生成单元以获得最佳优化
+panic = "abort"                  # 减少二进制大小和提高性能
+debug = false                    # 禁用调试信息
+rpath = false                    # 禁用rpath
+strip = true                     # 剥离符号表
 
-[workspace.dependencies.nockapp]
-path = "crates/nockapp"
+[profile.release-with-debug]
+inherits = "release"
+debug = true                     # 保留调试信息的发布版本
 
-[workspace.dependencies.ibig]
-path = "crates/nockvm/rust/ibig"
+# 针对特定目标的优化配置
+[profile.bench]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = true
 
-[workspace.dependencies.kernels]
-path = "crates/kernels"
-
-[workspace.dependencies.murmur3]
-path = "crates/nockvm/rust/murmur3"
-
-[workspace.dependencies.nockchain]
-path = "crates/nockchain"
-
-[workspace.dependencies.nockchain-libp2p-io]
-path = "crates/nockchain-libp2p-io"
-
-[workspace.dependencies.nockvm]
-path = "crates/nockvm/rust/nockvm"
-
-[workspace.dependencies.nockvm_crypto]
-path = "crates/nockvm/rust/nockvm_crypto"
-
-[workspace.dependencies.nockvm_macros]
-path = "crates/nockvm/rust/nockvm_macros"
-
-[workspace.dependencies.zkvm-jetpack]
-path = "crates/zkvm-jetpack"
-
-[workspace.dependencies]
-json = "0.12.4"
-lazy_static = "1.4.0"
-libc = "0.2.171"
-memmap2 = "^0.9.5"
-num-derive = "0.4.2"
-signal-hook = "0.3"
-signal-hook-tokio = "0.3.1"
-static_assertions = "1.1.0"
-
-## Sword crypto dependencies
-# ed25519
-curve25519-dalek = { version = "4.1.1", default-features = false }
-ed25519-dalek = { version = "2.1.0", default-features = false }
-x25519-dalek = { version = "2.0.0", features = [
-    "static_secrets",
-], default-features = false }
-
-# aes_siv
-aes = { version = "0.8.3", default-features = false }
-aes-siv = { version = "0.7.0", default-features = false }
-
-# sha
-sha1 = { version = "0.10.6", default-features = false }
-sha2 = { version = "0.10.8", default-features = false }
-
-# nockapp-specific workspace dependencies
-anyhow = "1.0"
-async-trait = "0.1"
-axum = "0.8.1"
-bincode = "2.0.0-rc.3"
-blake3 = { version = "1.5.1", features = ["serde"] }
-bs58 = "0.5.1"
-byteorder = "1.5.0"
-crossterm = "0.28.1"
-chrono = "0.4.40"
-intmap = "3.1.0"
-opentelemetry = { version = "0.27.1", features = [
-    "trace",
-    "logs",
-    "metrics",
-    "internal-logs",
-] }
-opentelemetry-otlp = { version = "0.27.0", features = [
-    "tonic",
-    "http-proto",
-    "reqwest-client",
-] }
-opentelemetry_sdk = { version = "0.27.1", features = ["rt-tokio"] }
-serde_bytes = { version = "0.11.15", features = ["alloc"] }
-tempfile = "3.3"
-termimad = "0.31.0"
-tonic = "0.12.3"
-tracing-opentelemetry = { version = "0.28.0", features = ["metrics"] }
-tracing-test = "0.2.5"
-yaque = "0.6.6"
-
-
-# External dependencies
-arrayref = "0.3.7"
-argon2 = "0.5.3"
-bardecoder = "0.5.0"
-bitcoincore-rpc = "0.19.0"
-bitvec = "1.0.1"
-bytes = "1.5.0"
-cfg-if = "1.0.0"
-clap = "4.4.4"
-config = "0.15"
-num-traits = "0.2"
-pin-project-lite = "0.2.16"
-criterion = { git = "https://github.com/vlovich/criterion.rs.git", rev = "9b485aece85a3546126b06cc25d33e14aba829b3", features = [
-    "html_reports",
-] }
-dirs = "6.0.0"
-either = "1.9.0"
-equix = "0.2.2"
-futures = "0.3.31"
-getrandom = { version = "0.2.15", features = ["std"] }
-gnort = "0.1.1"
-hex-literal = "1.0.0"
-hickory-resolver = { version = "0.25.0-alpha.4", features = ["system-config"] }
-hickory-proto = "0.25.0-alpha.4"
-image = "0.24.7"
-# libp2p = "0.55.0"
-libp2p = { git = "https://github.com/libp2p/rust-libp2p.git", rev = "da0017ee887a868e231ed78c7de892779c17800d" }
-qrcode = "0.13"
-quickcheck = "1.0.3"
-quickcheck_macros = "1.0"
-rand = "0.8.5"
-ratatui = "0.29.0"
-rayon = "1.8.0"
-reqwest = { version = "0.12", default-features = false, features = [
-    "rustls-tls",
-    "http2",
-    "charset",
-] }
-serde = "1.0.217"
-serde_json = "1.0.104"
-sha3 = "0.10.8"
-slotmap = "1.0.7"
-smallvec = "1.13.2"
-strum = { version = "0.26", features = ["derive"] }
-termcolor = "1.4"
-testcontainers = { git = "https://github.com/bitemyapp/testcontainers-rs.git", rev = "54851fd9faf9b9cded9d681b46f87c056880d870" }
-thiserror = "2.0.11"
-tikv-jemallocator = { version = "0.6" }
-tokio = { version = "1.32", features = [
-    "fs",
-    "io-util",
-    "macros",
-    "net",
-    "rt-multi-thread",
-    "rt",
-    "signal",
-] }
-tokio-util = "0.7.11"
-tower-http = { version = "0.6", features = ["fs"] }
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.18", features = [
-    "ansi",
-    "env-filter",
-    "registry",
-] }
-vergen = "8.3.2"
-void = "1.0.2"
-num_cpus = "1.16.0"
-# Let's Encrypt and HTTPS support
-instant-acme = "0.7.2"
-axum-server = { version = "0.7.2", features = ["tls-rustls"] }
-rustls = "0.23.0"
-rustls-pemfile = "2.0.0"
-tokio-rustls = "0.26.0"
-x509-parser = "0.16.0"
-rcgen = "0.13.0"
-webpki-roots = "0.26.0"
-
-
+# 开发时的快速编译配置
 [profile.dev]
 opt-level = 0
-debug = 2
+debug = true
+incremental = true
 
-[profile.test]
-inherits = "release"
+# ===== 性能优化依赖 =====
+[workspace.dependencies]
+# 高性能内存分配器
+jemallocator = "0.5"
+mimalloc = "0.1"
 
-[profile.release]
-opt-level = 3
-lto = "thin"
-codegen-units = 1
-debug = 1
+# SIMD 和并行计算
+rayon = "1.8"
+wide = "0.7"
+num_cpus = "1.16"
 
-[profile.release.package."*"]
-opt-level = 3
-codegen-units = 1
-debug = 1
+# 性能分析工具
+criterion = { version = "0.5", features = ["html_reports"] }
+pprof = { version = "0.13", features = ["flamegraph", "protobuf-codec"] }
+
+# 原有依赖保持不变
+hoonc = { path = "crates/hoonc" }
+nockapp = { path = "crates/nockapp" }
+ibig = { path = "crates/nockvm/rust/ibig" }
+kernels = { path = "crates/kernels" }
+murmur3 = { path = "crates/nockvm/rust/murmur3" }
+nockchain = { path = "crates/nockchain" }
+nockchain-libp2p-io = { path = "crates/nockchain-libp2p-io" }
+nockvm = { path = "crates/nockvm/rust/nockvm" }
+nockvm_crypto = { path = "crates/nockvm/rust/nockvm_crypto" }
+nockvm_macros = { path = "crates/nockvm/rust/nockvm_macros" }
+nockchain-wallet = { path = "crates/nockchain-wallet" }
+zkvm-jetpack = { path = "crates/zkvm-jetpack" }
+
+# 高性能依赖版本
+tokio = { version = "1.35", features = ["full", "tracing"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.4", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+anyhow = "1.0"
+thiserror = "1.0"
+blake3 = "1.5"
+sha2 = "0.10"
+rand = "0.8"
+crossbeam = "0.8"
+parking_lot = "0.12"
+dashmap = "5.5"
+once_cell = "1.19"
+
+# 网络相关优化依赖
+libp2p = { git = "https://github.com/libp2p/rust-libp2p.git", rev = "da0017ee887a868e231ed78c7de892779c17800d" }
+
+# 测试和基准测试工具  
+criterion = { git = "https://github.com/vlovich/criterion.rs.git", rev = "9b485aece85a3546126b06cc25d33e14aba829b3", features = ["html_reports"] }
+testcontainers = { git = "https://github.com/bitemyapp/testcontainers-rs.git", rev = "54851fd9faf9b9cded9d681b46f87c056880d870" }
+
+# ===== 编译时特性标志优化 =====
+[features]
+default = ["optimized"]
+optimized = ["jemalloc", "simd", "numa"]
+jemalloc = ["jemallocator"]
+mimalloc_feature = ["mimalloc"]
+simd = []
+numa = []
+profiling = ["pprof"]
+
+# 目标特定的配置
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+wide = "0.7"
+
+[target.'cfg(unix)'.dependencies] 
+nix = "0.27"
+
+# 条件编译配置
+[target.'cfg(target_env = "musl")'.dependencies]
+mimalloc = { version = "0.1", default-features = false }
+
+# ===== 自定义任务配置 =====
+[alias]
+bench-all = "bench --workspace"
+build-optimized = "build --release --features optimized"
+profile = "build --release --features profiling"
+mine-epyc = "run --release --features optimized --bin nockchain"
